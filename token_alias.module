@@ -1,0 +1,93 @@
+<?php
+/**
+ * @file
+ * Contains hook implementations for the Token Alias module.
+ */
+
+define('TOKEN_ALIAS_TEXT', 'txt');
+define('TOKEN_ALIAS_CALC', 'calc');
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function token_alias_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && $plugin == 'export_ui') {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Implements 'load callback' for token_alias exportables.
+ */
+function token_alias_load($name) {
+  ctools_include('export');
+  return ctools_export_crud_load('token_alias', $name);
+}
+
+/**
+ * Implements 'load multiple callback' for token_alias exportables.
+ */
+function token_alias_load_multiple(array $names = array()) {
+  ctools_include('export');
+  return $names ? ctools_export_crud_load_multiple('token_alias', $names) : ctools_export_crud_load_all('token_alias');
+}
+
+/**
+* Save a token_alias.
+*/
+function token_alias_save(&$token_alias) {
+  return ctools_export_crud_save('token_alias', $token_alias);
+}
+
+/**
+ * Set the status for token_alias.
+ */
+function token_alias_ctools_set_status($token_alias, $status) {
+  if (is_object($token_alias)) {
+    ctools_export_set_object_status($token_alias, $status);
+  }
+  else {
+    ctools_export_set_status('token_alias', $token_alias, $status);
+  }
+  token_clear_cache();
+}
+
+/**
+ * Implements hook_token_info().
+ */
+function token_alias_token_info() {
+  $aliases = token_alias_load_multiple();
+  $token_info = array('types' => array(), 'tokens' => array());
+  $tokens = &$token_info['tokens'];
+  foreach ($aliases as $alias) {
+    if (isset($alias->disabled) && $alias->disabled) {
+      continue;
+    }
+    $tokens[$alias->token_type][$alias->alias] = array(
+      'name' => $alias->label,
+      'description' => t('Token alias @label', array('@label' => $alias->label)),
+    );
+  }
+  return $token_info;
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function token_alias_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+  foreach ($tokens as $name => $original) {
+    if (($alias = token_alias_load($name))) {
+      switch ($alias->alias_type) {
+        case TOKEN_ALIAS_TEXT:
+          $replacements[$original] = token_replace($alias->text, $data, $options);
+          break;
+        case TOKEN_ALIAS_CALC:
+          // TODO: CTools Math.
+          $replacements[$original] = token_replace($alias->text, $data, $options);
+          break;
+      }
+    }
+  }
+  return $replacements;
+}
