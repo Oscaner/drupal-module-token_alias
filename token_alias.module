@@ -53,6 +53,18 @@ function token_alias_ctools_set_status($token_alias, $status) {
 }
 
 /**
+ * Implements hook_permission().
+ */
+function token_alias_permission() {
+  return array(
+    'administer token_alias' => array(
+      'title' => t('Administer token aliases'),
+      'description' => t('Allows users to administer token aliases.'),
+    ),
+  );
+}
+
+/**
  * Implements hook_token_info().
  */
 function token_alias_token_info() {
