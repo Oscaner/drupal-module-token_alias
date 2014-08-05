@@ -83,8 +83,17 @@ function token_alias_tokens($type, $tokens, array $data = array(), array $option
           $replacements[$original] = token_replace($alias->text, $data, $options);
           break;
         case TOKEN_ALIAS_CALC:
-          // TODO: CTools Math.
-          $replacements[$original] = token_replace($alias->text, $data, $options);
+          $options['clear'] = FALSE;
+          ctools_include('math-expr');
+          $expr = new ctools_math_expr();
+          $value = token_replace($alias->text, $data, $options);
+          $remaining_tokens = token_scan($value);
+          // Remaining tokens are empty. Replace them with 0.
+          foreach ($remaining_tokens as $token_type => $type_tokens) {
+            $value = str_replace($type_tokens, '0', $value);
+          }
+          $value = $expr->evaluate($value);
+          $replacements[$original] = is_numeric($value) ? number_format($value, $alias->round, $alias->decimal_separator, $alias->thousand_separator) : $value;
           break;
       }
     }

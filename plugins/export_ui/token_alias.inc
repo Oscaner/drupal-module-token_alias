@@ -55,9 +55,17 @@ function token_alias_ctools_export_ui_form(&$form, &$form_state) {
     '#required' => TRUE,
   );
 
+  $functions = array(// built-in functions
+    'sin', 'sinh', 'arcsin', 'asin', 'arcsinh', 'asinh',
+    'cos', 'cosh', 'arccos', 'acos', 'arccosh', 'acosh',
+    'tan', 'tanh', 'arctan', 'atan', 'arctanh', 'atanh',
+    'pow', 'exp',
+    'sqrt', 'abs', 'ln', 'log',
+    'ceil', 'floor', 'round');
+  drupal_alter('ctools_math_expression_functions', $functions);
   $form['info']['text'] = array(
     '#type' => 'textarea',
-    '#description' => t('Enter the text or formula to replace this token with.'),
+    '#description' => t('This field supports tokens. Enter the text or formula to replace this token with. Available functions for using calculation expressions are: @functions. Empty token values will be replaced with 0 in calculations.', array('@functions' => implode(', ', $functions))),
     '#title' => t('Text'),
     '#default_value' => $form_state['item']->text,
     '#required' => TRUE,
@@ -74,7 +82,6 @@ function token_alias_ctools_export_ui_form(&$form, &$form_state) {
     '#theme' => 'token_tree',
     '#dialog' => TRUE,
     '#token_types' => $token_types,
-    '#global_types' => FALSE,
     '#prefix' => '<div id="token-alias-token-tree-wrapper">',
     '#suffix' => '</div>',
   );
@@ -92,7 +99,6 @@ function token_alias_ctools_export_ui_form(&$form, &$form_state) {
       ),
     ),
   );
-
 
   $form['info']['decimal_separator'] = array(
     '#type' => 'select',
