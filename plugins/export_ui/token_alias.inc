@@ -120,7 +120,7 @@ function token_alias_ctools_export_ui_form(&$form, &$form_state) {
   $form['info']['thousand_separator'] = array(
     '#type' => 'select',
     '#default_value' => $form_state['item']->thousand_separator == ' ' ? 'space' : $form_state['item']->thousand_separator,
-    '#title' => t('Decimal separator'),
+    '#title' => t('Thousand separator'),
     '#options' => array(
       '.' => t('Point'),
       ',' => t('Comma'),
