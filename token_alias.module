@@ -4,111 +4,68 @@
  * Contains hook implementations for the Token Alias module.
  */
 
-define('TOKEN_ALIAS_TEXT', 'txt');
-define('TOKEN_ALIAS_CALC', 'calc');
+use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\token_alias\Plugin\Field\FieldWidget\TokenAliasWidget;
+use Drupal\pathauto\PathautoState;
 
 /**
- * Implements hook_ctools_plugin_directory().
+ * Implements hook_field_widget_info_alter().
  */
-function token_alias_ctools_plugin_directory($module, $plugin) {
-  if ($module == 'ctools' && $plugin == 'export_ui') {
-    return 'plugins/' . $plugin;
+function token_alias_field_widget_info_alter(array &$info) {
+  $info['path']['class'] = TokenAliasWidget::class;
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function token_alias_module_implements_alter(&$implementations, $hook) {
+  // Reorder pathauto_field_widget_info_alter & token_alias_field_widget_info_alter.
+  if ($hook === 'field_widget_info_alter') {
+    $group = $implementations['token_alias'];
+    unset($implementations['token_alias']);
+    $implementations['token_alias'] = $group;
+  }
+  // Remove pathauto_entity_insert hook, we need customize.
+  if ($hook === 'entity_insert') {
+    unset($implementations['pathauto']);
+  }
+  // Remove pathauto_entity_update hook, we need customize.
+  if ($hook === 'entity_update') {
+    unset($implementations['pathauto']);
   }
 }
 
 /**
- * Implements 'load callback' for token_alias exportables.
+ * Implements hook_entity_insert().
  */
-function token_alias_load($name) {
-  ctools_include('export');
-  return ctools_export_crud_load('token_alias', $name);
-}
-
-/**
- * Implements 'load multiple callback' for token_alias exportables.
- */
-function token_alias_load_multiple(array $names = array()) {
-  ctools_include('export');
-  return $names ? ctools_export_crud_load_multiple('token_alias', $names) : ctools_export_crud_load_all('token_alias');
-}
-
-/**
-* Save a token_alias.
-*/
-function token_alias_save(&$token_alias) {
-  return ctools_export_crud_save('token_alias', $token_alias);
-}
-
-/**
- * Set the status for token_alias.
- */
-function token_alias_ctools_set_status($token_alias, $status) {
-  if (is_object($token_alias)) {
-    ctools_export_set_object_status($token_alias, $status);
-  }
-  else {
-    ctools_export_set_status('token_alias', $token_alias, $status);
-  }
-  token_clear_cache();
-}
-
-/**
- * Implements hook_permission().
- */
-function token_alias_permission() {
-  return array(
-    'administer token_alias' => array(
-      'title' => t('Administer token aliases'),
-      'description' => t('Allows users to administer token aliases.'),
-    ),
-  );
-}
-
-/**
- * Implements hook_token_info().
- */
-function token_alias_token_info() {
-  $aliases = token_alias_load_multiple();
-  $token_info = array('types' => array(), 'tokens' => array());
-  $tokens = &$token_info['tokens'];
-  foreach ($aliases as $alias) {
-    if (isset($alias->disabled) && $alias->disabled) {
-      continue;
-    }
-    $tokens[$alias->token_type][$alias->alias] = array(
-      'name' => $alias->label,
-      'description' => t('Token alias @label', array('@label' => $alias->label)),
-    );
-  }
-  return $token_info;
-}
-
-/**
- * Implements hook_tokens().
- */
-function token_alias_tokens($type, $tokens, array $data = array(), array $options = array()) {
-  $replacements = array();
-  foreach ($tokens as $name => $original) {
-    if (($alias = token_alias_load($name))) {
-      switch ($alias->alias_type) {
-        case TOKEN_ALIAS_TEXT:
-          $replacements[$original] = token_replace($alias->text, $data, $options);
-          break;
-        case TOKEN_ALIAS_CALC:
-          $options['clear'] = FALSE;
-          ctools_include('math-expr');
-          $expr = new ctools_math_expr();
-          $value = token_replace($alias->text, $data, $options);
-          $remaining_tokens = token_scan($value);
-          // Remaining tokens are empty. Replace them with 0.
-          foreach ($remaining_tokens as $token_type => $type_tokens) {
-            $value = str_replace($type_tokens, '0', $value);
-          }
-          $value = $expr->evaluate($value);
-          $replacements[$original] = is_numeric($value) ? number_format($value, $alias->round, $alias->decimal_separator, $alias->thousand_separator) : $value;
-          break;
-      }
+function token_alias_entity_insert(EntityInterface $entity) {
+  // Default use pathauto.generator service.
+  $pathauto_generator = \Drupal::service('pathauto.generator');
+  // Customize.
+  if ($entity instanceof ContentEntityInterface && $entity->hasField('path')) {
+    // Use pathauto.generator service for PathautoState::SKIP.
+    if ($entity->path->pathauto === PathautoState::SKIP) {
+      $pathauto_generator = \Drupal::service('token_alias.generator');
     }
   }
-  return $replacements;
+  // Handle alias.
+  $pathauto_generator->updateEntityAlias($entity, 'insert');
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function token_alias_entity_update(EntityInterface $entity) {
+  // Default use pathauto.generator service.
+  $pathauto_generator = \Drupal::service('pathauto.generator');
+  // Customize.
+  if ($entity instanceof ContentEntityInterface && $entity->hasField('path')) {
+    // Use pathauto.generator service for PathautoState::SKIP.
+    if ($entity->path->pathauto == PathautoState::SKIP) {
+      $pathauto_generator = \Drupal::service('token_alias.generator');
+    }
+  }
+  // Handle alias.
+  $pathauto_generator->updateEntityAlias($entity, 'update');
 }

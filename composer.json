@@ -1,0 +1,24 @@
+{
+    "name": "drupal/token_alias",
+    "type": "drupal-module",
+    "authors": [
+        {
+            "name": "Kang Miao",
+            "email": "kang@ciandt.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "drupal/pathauto": "^1.6"
+    },
+    "extra": {
+        "patches": {
+            "drupal/pathauto": {
+                "https://drupal.org/node/3173785": "https://www.drupal.org/files/issues/2020-09-29/3173785-2.patch"
+            },
+            "drupal/metatag": {
+                "https://drupal.org/node/3165028": "https://www.drupal.org/files/issues/2020-08-13/missing-core-version-requirement-3165028-2.patch"
+            }
+        }
+    }
+}
