@@ -1,0 +1,12 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function token_alias_install() {
+  // Set the weight large than pathauto module.
+  $pathauto_weight = \Drupal::configFactory()->getEditable('core.extension')->get('module.pathauto');
+  if ($pathauto_weight !== NULL) {
+    module_set_weight('token_alias', $pathauto_weight + 1);
+  }
+}

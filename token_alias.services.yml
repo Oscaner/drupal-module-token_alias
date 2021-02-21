@@ -1,0 +1,15 @@
+services:
+  token_alias.form_helper:
+    class: Drupal\token_alias\TokenAliasFormHelper
+  token_alias.generator:
+    class: Drupal\token_alias\TokenAliasGenerator
+    arguments: ['@config.factory', '@module_handler', '@token', '@pathauto.alias_cleaner', '@pathauto.alias_storage_helper', '@pathauto.alias_uniquifier', '@pathauto.verbose_messenger', '@string_translation', '@token.entity_mapper', '@entity_type.manager', '@plugin.manager.alias_type']
+  token_alias.alias_storage_helper:
+    class: Drupal\token_alias\TokenAliasStorageHelper
+    public: false
+    decorates: pathauto.alias_storage_helper
+    decoration_on_invalid: ignore
+    decoration_priority: 1
+    arguments: ['@token_alias.alias_storage_helper.inner', '@config.factory', '@path_alias.repository', '@database','@pathauto.verbose_messenger', '@string_translation', '@entity_type.manager']
+    tags:
+      - { name: backend_overridable }

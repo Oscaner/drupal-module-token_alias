@@ -1,0 +1,67 @@
+<?php
+
+use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\token_alias\Plugin\Field\FieldWidget\TokenAliasWidget;
+use Drupal\pathauto\PathautoState;
+
+/**
+ * Implements hook_field_widget_info_alter().
+ */
+function token_alias_field_widget_info_alter(array &$info) {
+  $info['path']['class'] = TokenAliasWidget::class;
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function token_alias_module_implements_alter(&$implementations, $hook) {
+  // Reorder pathauto_field_widget_info_alter & token_alias_field_widget_info_alter.
+  if ($hook === 'field_widget_info_alter') {
+    $group = $implementations['token_alias'];
+    unset($implementations['token_alias']);
+    $implementations['token_alias'] = $group;
+  }
+  // Remove pathauto_entity_insert hook, we need customize.
+  if ($hook === 'entity_insert') {
+    unset($implementations['pathauto']);
+  }
+  // Remove pathauto_entity_update hook, we need customize.
+  if ($hook === 'entity_update') {
+    unset($implementations['pathauto']);
+  }
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function token_alias_entity_insert(EntityInterface $entity) {
+  // Default use pathauto.generator service.
+  $pathauto_generator = \Drupal::service('pathauto.generator');
+  // Customize.
+  if ($entity instanceof ContentEntityInterface && $entity->hasField('path')) {
+    // Use pathauto.generator service for PathautoState::SKIP.
+    if ($entity->path->pathauto === PathautoState::SKIP) {
+      $pathauto_generator = \Drupal::service('token_alias.generator');
+    }
+  }
+  // Handle alias.
+  $pathauto_generator->updateEntityAlias($entity, 'insert');
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function token_alias_entity_update(EntityInterface $entity) {
+  // Default use pathauto.generator service.
+  $pathauto_generator = \Drupal::service('pathauto.generator');
+  // Customize.
+  if ($entity instanceof ContentEntityInterface && $entity->hasField('path')) {
+    // Use pathauto.generator service for PathautoState::SKIP.
+    if ($entity->path->pathauto == PathautoState::SKIP) {
+      $pathauto_generator = \Drupal::service('token_alias.generator');
+    }
+  }
+  // Handle alias.
+  $pathauto_generator->updateEntityAlias($entity, 'update');
+}

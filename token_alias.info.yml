@@ -1,0 +1,6 @@
+name: 'Token alias'
+description: 'Provides a mechanism for modules to use token on aliases for the content they manage.'
+core_version_requirement: ^8.8 || ^9
+type: module
+dependencies:
+  - pathauto:pathauto
